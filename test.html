@@ -1,0 +1,55 @@
+<video autoplay></video>
+<button id="capture">Capture</button>
+<img id="preview" />
+
+<script>
+  const videoElement = document.querySelector('video');
+  const captureButton = document.querySelector('#capture');
+  const previewElement = document.querySelector('#preview');
+
+  const constraints = {
+    video: {
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+      facingMode: 'environment',
+      advanced: [{ focusMode: 'continuous' }]
+    }
+  };
+
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => {
+      videoElement.srcObject = stream;
+      videoElement.play();
+
+      const videoTrack = stream.getVideoTracks()[0];
+      const imageCapture = new ImageCapture(videoTrack);
+
+      // Enable auto-focus
+      imageCapture.getPhotoCapabilities()
+        .then(photoCapabilities => {
+          if (photoCapabilities.focusMode && photoCapabilities.focusMode.includes('continuous')) {
+            return imageCapture.setOptions({ focusMode: 'continuous' });
+          }
+        })
+        .then(() => {
+          console.log('Auto-focus enabled');
+        })
+        .catch(error => {
+          console.error('Error setting focus mode:', error);
+        });
+
+      // Capture photo
+      captureButton.addEventListener('click', () => {
+        imageCapture.takePhoto()
+          .then(blob => {
+            previewElement.src = URL.createObjectURL(blob);
+          })
+          .catch(error => {
+            console.error('Error capturing photo:', error);
+          });
+      });
+    })
+    .catch(error => {
+      console.error('Error accessing the camera:', error);
+    });
+</script>
